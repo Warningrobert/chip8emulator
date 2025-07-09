@@ -4,6 +4,7 @@
 
 #ifndef CHIP_H
 #define CHIP_H
+#include <chrono>
 #include <cstdint>
 #include <stack>
 #include <string>
@@ -14,7 +15,7 @@ class Chip {
 public:
     Chip();
     bool loadROM(const std::string& filename);
-
+    void updateTimers();
 
 private:
     uint8_t memory[4096];
@@ -24,6 +25,7 @@ private:
     std::stack<uint16_t> addressStack;
     uint8_t timer;
     uint8_t V[16];
+    std::chrono::steady_clock::time_point lastTimerUpdate;
     uint8_t fontSet[80] = {
         // Character '0'
         0xF0, // ****

@@ -27,7 +27,7 @@ Chip::Chip() : pc(512), I(0), timer(0) {
     for (int i = 0; i < 80; i++) {
         memory[80 + i] = fontSet[i];
     }
-
+    lastTimerUpdate = std::chrono::steady_clock::now();
 }
 
 bool Chip::loadROM(const std::string& filename) {
@@ -46,4 +46,15 @@ bool Chip::loadROM(const std::string& filename) {
 
     file.close();
     return true;
+}
+void Chip::updateTimers() {
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTimerUpdate);
+
+    if (elapsed.count() >= 16) {  // ~60Hz
+        if (timer > 0) {
+            timer--;
+        }
+        lastTimerUpdate = now;
+    }
 }
