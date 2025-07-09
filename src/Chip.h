@@ -6,13 +6,14 @@
 #define CHIP_H
 #include <cstdint>
 #include <stack>
+#include <string>
 
 
 class Chip {
 
 public:
     Chip();
-
+    bool loadROM(const std::string& filename);
 
 
 private:
