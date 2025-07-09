@@ -11,7 +11,8 @@
 class Chip {
 
 public:
-    Chip8();
+    Chip();
+
 
 
 private:
