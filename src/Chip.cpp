@@ -24,6 +24,9 @@ Chip::Chip() : pc(512), I(0), timer(0) {
         V[i] = 0;
     }
 
+    for (int i = 0; i < 80; i++) {
+        memory[80 + i] = fontSet[i];
+    }
 
 }
 
