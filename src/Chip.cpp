@@ -58,3 +58,21 @@ void Chip::updateTimers() {
         lastTimerUpdate = now;
     }
 }
+
+uint16_t Chip::fetchInstruction() {
+
+    uint8_t firstByte = memory[pc];
+
+    uint8_t secondByte = memory[pc + 1];
+
+    uint16_t instruction = (firstByte << 8) | secondByte;
+
+    pc += 2;
+
+    return instruction;
+}
+
+void Chip::executeInstruction() {
+    uint16_t instruction = fetchInstruction();
+    decodeAndExecute(instruction);
+}

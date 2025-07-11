@@ -16,6 +16,7 @@ public:
     Chip();
     bool loadROM(const std::string& filename);
     void updateTimers();
+    void Chip::executeInstruction();
 
 private:
     uint8_t memory[4096];
@@ -26,6 +27,7 @@ private:
     uint8_t timer;
     uint8_t V[16];
     std::chrono::steady_clock::time_point lastTimerUpdate;
+    uint16_t fetchInstruction();
     uint8_t fontSet[80] = {
         // Character '0'
         0xF0, // ****
