@@ -80,57 +80,125 @@ void Chip::executeInstruction() {
 }
 
 void Chip::decodeAndExecute(uint16_t instruction) {
+
+    /*
+     * CHIP-8 instructions are 16 bits (2 bytes) and follow this format:
+     * Each instruction is made up of 4 nibbles (4-bit values):
+     *
+     * [FIRST][X][Y][N] or [FIRST][NNN] or [FIRST][X][NN]
+     *
+     * - FIRST nibble: Determines the instruction category (0x0 to 0xF)
+     * - X: Second nibble, usually a register index (V0-VF)
+     * - Y: Third nibble, usually a register index (V0-VF)
+     * - N: Fourth nibble, a 4-bit immediate value
+     * - NN: Last two nibbles combined, an 8-bit immediate value
+     * - NNN: Last three nibbles combined, a 12-bit memory address
+     */
+
     uint8_t op = (instruction >> 12) & 0xF;
+
+    // Extract common operands
+    uint8_t x = (instruction >> 8) & 0xF;
+    uint8_t y = (instruction >> 4) & 0xF;
+    uint8_t nn = instruction & 0xFF;
+    uint16_t nnn = instruction & 0xFFF;
 
     switch (op) {
         case 0x0: {
             if (instruction == 0x00E0) {
+                // Clear screen
                 for (int x = 0; x < 64; ++x) {
                     for (int y = 0; y < 32; ++y) {
                         pixels[x][y] = false;
                     }
                 }
             }
+            // Return from subroutine
+            else if (instruction == 0x00EE) {
+                if (!addressStack.empty()) {
+                    pc = addressStack.top();
+                    addressStack.pop();
+                }
+            }
             break;
         }
 
         case 0x1: {
-            uint16_t addr = instruction & 0xFFF;
-            pc = addr;
+            // Jump to address
+            pc = nnn;
+            break;
+        }
+
+        // Call subroutine
+        case 0x2: {
+            addressStack.push(pc);  // Save current location
+            pc = nnn;               // Jump to subroutine
+            break;
+        }
+
+        // Skip if VX == NN
+        case 0x3: {
+            if (V[x] == nn) {
+                pc += 2;  // Skip next instruction
+            }
+            break;
+        }
+
+        // Skip if VX != NN
+        case 0x4: {
+            if (V[x] != nn) {
+                pc += 2;  // Skip next instruction
+            }
             break;
         }
 
         case 0x6: {
-            uint8_t x = (instruction >> 8) & 0xF;
-            uint8_t nn = instruction & 0xFF;
+            // Set register VX to NN
             V[x] = nn;
             break;
         }
 
         case 0x7: {
-            uint8_t x = (instruction >> 8) & 0xF;
-            uint8_t nn = instruction & 0xFF;
+            // Add NN to register VX
             V[x] += nn;
             break;
         }
 
+        // Register operations
+        case 0x8: {
+            uint8_t operation = instruction & 0xF;
+            switch (operation) {
+                case 0x0: // Set VX = VY
+                    V[x] = V[y];
+                    break;
+                case 0x4: // Add VY to VX (with carry)
+                    {
+                        uint16_t sum = V[x] + V[y];
+                        V[0xF] = (sum > 255) ? 1 : 0;  // Set carry flag
+                        V[x] = sum & 0xFF;             // Keep only lower 8 bits
+                    }
+                    break;
+                default:
+                    std::cerr << "Unknown 8XY operation: 0x" << std::hex << operation << std::endl;
+                    break;
+            }
+            break;
+        }
+
         case 0xA: {
-            uint16_t addr = instruction & 0xFFF;
-            I = addr;
+            // Set index register I to NNN
+            I = nnn;
             break;
         }
 
         case 0xD: {
-            uint8_t x_reg = (instruction >> 8) & 0xF;
-            uint8_t y_reg = (instruction >> 4) & 0xF;
-            uint8_t height = instruction & 0xF;
-
-            uint8_t pos_x = V[x_reg] % 64;
-            uint8_t pos_y = V[y_reg] % 32;
+            // Draw N-byte sprite from memory location I at (VX, VY)
+            uint8_t pos_x = V[x] % 64;
+            uint8_t pos_y = V[y] % 32;
 
             V[0xF] = 0;
 
-            for (uint8_t row = 0; row < height; ++row) {
+            for (uint8_t row = 0; row < n; ++row) {
                 uint8_t sprite_byte = memory[I + row];
 
                 for (uint8_t bit = 0; bit < 8; ++bit) {
@@ -139,7 +207,6 @@ void Chip::decodeAndExecute(uint16_t instruction) {
                         uint8_t screen_x = (pos_x + bit) % 64;
                         uint8_t screen_y = (pos_y + row) % 32;
 
-
                         bool& pixel = pixels[screen_x][screen_y];
                         if (pixel) {
                             V[0xF] = 1;
@@ -147,6 +214,22 @@ void Chip::decodeAndExecute(uint16_t instruction) {
                         pixel = !pixel;
                     }
                 }
+            }
+            break;
+        }
+
+        // Timer operations
+        case 0xF: {
+            switch (nn) {
+                case 0x07: // Set VX = delay timer
+                    V[x] = timer;
+                    break;
+                case 0x15: // Set delay timer = VX
+                    timer = V[x];
+                    break;
+                default:
+                    std::cerr << "Unknown FX operation: 0x" << std::hex << nn << std::endl;
+                    break;
             }
             break;
         }
