@@ -17,6 +17,9 @@ public:
     bool loadROM(const std::string& filename);
     void updateTimers();
     void executeInstruction();
+    void renderDisplay() const;
+    bool updateOccured = false;
+
 
 private:
     uint8_t memory[4096];

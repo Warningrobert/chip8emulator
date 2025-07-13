@@ -48,10 +48,12 @@ bool Chip::loadROM(const std::string& filename) {
     return true;
 }
 void Chip::updateTimers() {
+    updateOccured = false;
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTimerUpdate);
 
     if (elapsed.count() >= 16) {  // ~60Hz
+        updateOccured = true;
         if (timer > 0) {
             timer--;
         }
@@ -153,4 +155,17 @@ void Chip::decodeAndExecute(uint16_t instruction) {
             std::cerr << "Unknown instruction: 0x" << std::hex << instruction << std::endl;
             break;
     }
+}
+
+void Chip::renderDisplay() const {
+    std::system("clear");
+
+    for (int y = 0; y < 32; ++y) {
+        for (int x = 0; x < 64; ++x) {
+            std::cout << (pixels[x][y] ? '*' : ' ');
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::flush;
 }
