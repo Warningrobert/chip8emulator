@@ -155,6 +155,13 @@ void Chip::decodeAndExecute(uint16_t instruction) {
             }
             break;
         }
+            // Skip if VX == VY
+        case 0x5: {
+            if (V[x] == V[y]) {
+                pc += 2;  // Skip next instruction
+            }
+            break;
+        }
 
         case 0x6: {
             // Set register VX to NN
@@ -188,6 +195,13 @@ void Chip::decodeAndExecute(uint16_t instruction) {
             }
             break;
         }
+            // Skip if VX != VY
+        case 0x9: {
+            if (V[x] != V[y]) {
+                pc += 2;  // Skip next instruction
+            }
+            break;
+        }
 
         case 0xA: {
             // Set index register I to NNN
@@ -195,6 +209,7 @@ void Chip::decodeAndExecute(uint16_t instruction) {
             break;
         }
         case 0xC: {
+            // Generate random number
             V[x] = (rand() % 256) & nn;
             break;
         }
