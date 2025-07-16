@@ -7,8 +7,11 @@
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <cstdlib>
 
 Chip::Chip() : pc(512), I(0), timer(0) {
+
+    srand(time(nullptr));
 
     for (int i = 0; i < 4096; i++) {
         memory[i] = 0;
@@ -100,6 +103,7 @@ void Chip::decodeAndExecute(uint16_t instruction) {
     // Extract common operands
     uint8_t x = (instruction >> 8) & 0xF;
     uint8_t y = (instruction >> 4) & 0xF;
+    uint8_t n = instruction & 0xF;
     uint8_t nn = instruction & 0xFF;
     uint16_t nnn = instruction & 0xFFF;
 
@@ -188,6 +192,10 @@ void Chip::decodeAndExecute(uint16_t instruction) {
         case 0xA: {
             // Set index register I to NNN
             I = nnn;
+            break;
+        }
+        case 0xC: {
+            V[x] = (rand() % 256) & nn;
             break;
         }
 
