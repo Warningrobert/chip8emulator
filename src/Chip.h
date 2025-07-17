@@ -19,12 +19,14 @@ public:
     void executeInstruction();
     void renderDisplay() const;
     bool updateOccured = false;
-
+    void setKeyPressed(uint8_t key, bool pressed);
 
 private:
     uint8_t memory[4096];
     bool pixels[64][32];
     int pc;
+    bool keyPressed[16];
+    uint8_t soundTimer;
     uint16_t I;
     std::stack<uint16_t> addressStack;
     uint8_t timer;

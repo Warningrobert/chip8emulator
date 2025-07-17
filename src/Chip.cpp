@@ -13,6 +13,10 @@ Chip::Chip() : pc(512), I(0), timer(0) {
 
     srand(time(nullptr));
 
+    for (int i = 0; i < 16; i++) {
+        keyPressed[i] = false;
+    }
+
     for (int i = 0; i < 4096; i++) {
         memory[i] = 0;
     }
@@ -60,6 +64,9 @@ void Chip::updateTimers() {
         if (timer > 0) {
             timer--;
         }
+        if (soundTimer > 0) {
+            soundTimer--;
+        }
         lastTimerUpdate = now;
     }
 }
@@ -83,7 +90,7 @@ void Chip::executeInstruction() {
 }
 
 void Chip::decodeAndExecute(uint16_t instruction) {
-    std::cout << "PC: 0x" << std::hex << pc << " Instruction: 0x" << instruction << std::endl; // For debugging
+    //std::cout << "PC: 0x" << std::hex << pc << " Instruction: 0x" << instruction << std::endl; // For debugging
     /*
      * CHIP-8 instructions are 16 bits (2 bytes) and follow this format:
      * Each instruction is made up of 4 nibbles (4-bit values):
@@ -114,7 +121,7 @@ void Chip::decodeAndExecute(uint16_t instruction) {
                 for (int x = 0; x < 64; ++x) {
                     for (int y = 0; y < 32; ++y) {
                         pixels[x][y] = false;
-                    }
+                           }
                 }
             }
             // Return from subroutine
@@ -182,16 +189,37 @@ void Chip::decodeAndExecute(uint16_t instruction) {
                 case 0x0: // Set VX = VY
                     V[x] = V[y];
                     break;
+                case 0x1: // Set VX = VX OR VY
+                    V[x] |= V[y];
+                    break;
+                case 0x2: // Set VX = VX AND VY
+                    V[x] &= V[y];
+                    break;
+                case 0x3: // Set VX = VX XOR VY
+                    V[x] ^= V[y];
+                    break;
                 case 0x4: // Add VY to VX (with carry)
-                    {
-                        uint16_t sum = V[x] + V[y];
-                        V[0xF] = (sum > 255) ? 1 : 0;  // Set carry flag
-                        V[x] = sum & 0xFF;             // Keep only lower 8 bits
-                    }
+                {
+                    uint16_t sum = V[x] + V[y];
+                    V[0xF] = (sum > 255) ? 1 : 0;
+                    V[x] = sum & 0xFF;
+                }
                     break;
                 case 0x5: // VX = VX - VY, set VF = NOT borrow
                     V[0xF] = (V[x] >= V[y]) ? 1 : 0;
                     V[x] -= V[y];
+                    break;
+                case 0x6: // Shift VX right by 1
+                    V[0xF] = V[x] & 0x1;
+                    V[x] >>= 1;
+                    break;
+                case 0x7: // VX = VY - VX, set VF = NOT borrow
+                    V[0xF] = (V[y] >= V[x]) ? 1 : 0;
+                    V[x] = V[y] - V[x];
+                    break;
+                case 0xE: // Shift VX left by 1
+                    V[0xF] = (V[x] & 0x80) >> 7;
+                    V[x] <<= 1;
                     break;
                 default:
                     std::cerr << "Unknown 8XY operation: 0x" << std::hex << operation << std::endl;
@@ -270,6 +298,24 @@ void Chip::decodeAndExecute(uint16_t instruction) {
                 case 0x29: // Set I = location of sprite for digit VX
                     I = 80 + (V[x] & 0xF) * 5; // Font data starts at 0x50 (80), each char is 5 bytes
                     break;
+                case 0x0A: // Wait for key press, store in VX
+                {
+                    bool keyFound = false;
+                    for (int i = 0; i < 16; ++i) {
+                        if (keyPressed[i]) {
+                            V[x] = i;
+                            keyFound = true;
+                            break;
+                        }
+                    }
+                    if (!keyFound) {
+                        pc -= 2; // Stay on this instruction until key is pressed
+                    }
+                }
+                    break;
+                case 0x18: // Set sound timer = VX
+                    soundTimer = V[x];
+                    break;
                 default:
                     std::cerr << "Unknown FX operation: 0x" << std::hex << nn << std::endl;
                     break;
@@ -294,4 +340,10 @@ void Chip::renderDisplay() const {
     }
 
     std::cout << std::flush;
+}
+
+void Chip::setKeyPressed(uint8_t key, bool pressed) {
+    if (key < 16) {
+        keyPressed[key] = pressed;
+    }
 }
