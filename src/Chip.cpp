@@ -272,7 +272,21 @@ void Chip::decodeAndExecute(uint16_t instruction) {
             }
             break;
         }
-
+            // Key input operations
+        case 0xE: {
+            if (nn == 0x9E) {
+                // Skip next instruction if key VX is pressed
+                if (keyPressed[V[x] & 0xF]) {
+                    pc += 2;
+                }
+            } else if (nn == 0xA1) {
+                // Skip next instruction if key VX is not pressed
+                if (!keyPressed[V[x] & 0xF]) {
+                    pc += 2;
+                }
+            }
+            break;
+        }
         // Timer operations
         case 0xF: {
             switch (nn) {
