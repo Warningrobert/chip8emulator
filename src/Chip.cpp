@@ -83,7 +83,7 @@ void Chip::executeInstruction() {
 }
 
 void Chip::decodeAndExecute(uint16_t instruction) {
-
+    std::cout << "PC: 0x" << std::hex << pc << " Instruction: 0x" << instruction << std::endl; // For debugging
     /*
      * CHIP-8 instructions are 16 bits (2 bytes) and follow this format:
      * Each instruction is made up of 4 nibbles (4-bit values):
@@ -189,6 +189,10 @@ void Chip::decodeAndExecute(uint16_t instruction) {
                         V[x] = sum & 0xFF;             // Keep only lower 8 bits
                     }
                     break;
+                case 0x5: // VX = VX - VY, set VF = NOT borrow
+                    V[0xF] = (V[x] >= V[y]) ? 1 : 0;
+                    V[x] -= V[y];
+                    break;
                 default:
                     std::cerr << "Unknown 8XY operation: 0x" << std::hex << operation << std::endl;
                     break;
@@ -244,11 +248,27 @@ void Chip::decodeAndExecute(uint16_t instruction) {
         // Timer operations
         case 0xF: {
             switch (nn) {
+                case 0x55: // Store registers V0-VX in memory starting at I
+                    for (uint8_t i = 0; i <= x; ++i) {
+                        memory[I + i] = V[i];
+                    }
+                    break;
+                case 0x65: // Load registers V0-VX from memory starting at I
+                    for (uint8_t i = 0; i <= x; ++i) {
+                        V[i] = memory[I + i];
+                    }
+                    break;
                 case 0x07: // Set VX = delay timer
                     V[x] = timer;
                     break;
                 case 0x15: // Set delay timer = VX
                     timer = V[x];
+                    break;
+                case 0x1E: // Add VX to index register I
+                    I += V[x];
+                    break;
+                case 0x29: // Set I = location of sprite for digit VX
+                    I = 80 + (V[x] & 0xF) * 5; // Font data starts at 0x50 (80), each char is 5 bytes
                     break;
                 default:
                     std::cerr << "Unknown FX operation: 0x" << std::hex << nn << std::endl;
