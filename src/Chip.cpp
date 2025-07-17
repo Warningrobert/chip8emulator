@@ -290,6 +290,14 @@ void Chip::decodeAndExecute(uint16_t instruction) {
         // Timer operations
         case 0xF: {
             switch (nn) {
+                case 0x33: // Store BCD representation of VX at I, I+1, I+2
+                {
+                    uint8_t value = V[x];
+                    memory[I] = value / 100;        // Hundreds digit
+                    memory[I + 1] = (value / 10) % 10; // Tens digit
+                    memory[I + 2] = value % 10;     // Ones digit
+                }
+                    break;
                 case 0x55: // Store registers V0-VX in memory starting at I
                     for (uint8_t i = 0; i <= x; ++i) {
                         memory[I + i] = V[i];
